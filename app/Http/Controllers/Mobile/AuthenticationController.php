@@ -48,6 +48,9 @@ class AuthenticationController extends Controller
             'phone' => $input['phone'],
             'email' => $input['email'],
             'password' => Hash::make($input['password']),
+            'dob' => "",
+            'gender' => "",
+            'uuid' => hexdec(uniqid() . rand(0, 100)),
         ]);
 
 
@@ -56,9 +59,9 @@ class AuthenticationController extends Controller
             'name' => 'deposit'
         ]);
 
-        Mail::to($user->email)->send(new ClientWelcomeMail($user,$user));
+//        Mail::to($user->email)->send(new ClientWelcomeMail($user));
 
-        return response()->json(['success' => true, 'message' => 'Registration successfully', 'data' => $user]);
+        return response()->json(['success' => true, 'message' => 'Registration successful', 'data' => $user]);
     }
 
     public function setPin(Request $request)

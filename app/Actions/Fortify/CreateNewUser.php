@@ -114,7 +114,7 @@ class CreateNewUser implements CreatesNewUsers
             'name' => 'deposit'
         ]);
 
-        Mail::to($u->email)->send(new ClientWelcomeMail($u,$biz));
+        Mail::to($u->email)->send(new ClientWelcomeMail($u));
 
         return $u;
     }

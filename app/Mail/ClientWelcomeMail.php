@@ -22,10 +22,9 @@ class ClientWelcomeMail extends Mailable implements ShouldQueue
     public $user;
     public $biz;
 
-    public function __construct(User $user, Business $biz)
+    public function __construct(User $user)
     {
         $this->user=$user;
-        $this->biz=$biz;
     }
 
     /**

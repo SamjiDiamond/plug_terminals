@@ -78,8 +78,8 @@
                                             <td class="v-container-padding-padding" style="overflow-wrap:break-word;word-break:break-word;padding:5px 55px 30px;font-family:'Cabin',sans-serif;" align="left">
 
                                                 <div class="v-font-size" style="font-family: helvetica,sans-serif; font-weight: 700; color: #585858; line-height: 200%; text-align: left; word-wrap: break-word;">
-                                                    <p style="line-height: 200%;"><strong><span style="font-family: Nunito; line-height: 28px;">Thank you for signing up to use Verdant. We built Verdant to make your payment transactions seamless. We have tried a lot of options and none of them solved our exchange problems.</span></strong></p>
-                                                    <p style="line-height: 200%;"><strong><span style="font-family: Nunito; line-height: 28px;">Verdant is different! Now, sit back as we relieve you of all your payment and transaction hassles. Best regards, </span><span style="font-family: Nunito; line-height: 28px;">Team Verdant</span></strong></p>
+                                                    <p style="line-height: 200%;"><strong><span style="font-family: Nunito; line-height: 28px;">Thank you for signing up to use Plug Terminals. We built Plug Terminals to make your payment transactions seamless. We have tried a lot of options and none of them solved our exchange problems.</span></strong></p>
+                                                    <p style="line-height: 200%;"><strong><span style="font-family: Nunito; line-height: 28px;">Plug Terminals is different! Now, sit back as we relieve you of all your payment and transaction hassles. Best regards, </span><span style="font-family: Nunito; line-height: 28px;">Team Plug Terminals</span></strong></p>
                                                 </div>
 
                                             </td>
