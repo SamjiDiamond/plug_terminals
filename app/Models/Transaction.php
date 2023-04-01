@@ -14,4 +14,12 @@ class Transaction extends Model
     function user(){
         return $this->belongsTo(User::class);
     }
+
+    function bills(){
+        return $this->hasOne(BillsHistory::class, 'trx','reference');
+    }
+
+    function transfer(){
+        return $this->hasOne(transfer::class, 'refid','reference');
+    }
 }

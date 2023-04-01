@@ -141,6 +141,7 @@ class PayoutController extends Controller
             'account_number' => 'required',
             'narration' => 'required',
             'reference' => 'required',
+            'accountName' => 'required',
             'pin' => 'required'
         ]);
 
@@ -244,6 +245,8 @@ class PayoutController extends Controller
             'account_no' => $accountNumber,
             'narration' => $request->narration,
             'refid' => $reference,
+            'account_name' => $input['accountName'],
+            'fee' => '50',
         ]);
 
         Transaction::create([

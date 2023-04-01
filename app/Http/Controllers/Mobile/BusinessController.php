@@ -19,7 +19,7 @@ class BusinessController extends Controller
     }
 
     function transactions(){
-        $datas=Transaction::where('user_id', Auth::id())->latest()->get();
+        $datas=Transaction::where('user_id', Auth::id())->with('bills', 'transfer')->latest()->get();
 
         return response()->json(['success' => true, 'message' => 'Fetched', 'data' => $datas]);
     }
