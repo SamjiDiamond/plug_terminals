@@ -4,7 +4,7 @@
     Your email verification code is {{$code}}.
 
     @slot('subcopy')
-        You received this email because you attempt to register on {{ config('app.name') }}.
+        You received this email because you attempt to recover your password on {{ config('app.name') }}.
         Note: Do not share this code with anyone.
     @endslot
 

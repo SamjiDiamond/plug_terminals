@@ -6,9 +6,12 @@ use App\Http\Controllers\Controller;
 use App\Http\Controllers\WemaController;
 use App\Jobs\SendEmailVerificationNotificationJob;
 use App\Mail\ClientWelcomeMail;
+use App\Mail\EmailVerificationMail;
+use App\Mail\UserWelcomeMail;
 use App\Models\AvailableWallet;
 use App\Models\Business;
 use App\Models\BusinessCredentials;
+use App\Models\CodeRequest;
 use App\Models\Terminal;
 use App\Models\User;
 use App\Models\Wallet;
@@ -162,6 +165,103 @@ class AuthenticationController extends Controller
             : response()->json(['success' => false, 'message' => __($status)]);
 
     }
+
+    //Password Reset
+    public function forget_password_submit(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|string|max:255',
+            'code' => 'required',
+            'password' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => implode(",", $validator->errors()->all())]);
+        }
+
+        $type = "recover";
+
+        $reg = CodeRequest::where([['mobile', $request->email], ['status', 0], ['type', $type]])->latest()->first();
+
+        if ($reg == null) {
+            return response()->json(['success' => false, 'message' => 'Kindly request for OTP']);
+        }
+
+        if ($reg->code != $request->code) {
+            return response()->json(['success' => false, 'message' => 'Verification code did not match']);
+        }
+
+        User::where(['phone' => $request->email])->orWhere(['email' => $request->email])->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        $reg->status = 1;
+        $reg->save();
+
+        return response()->json(['success' => true, 'message' => 'Password reset successfully.']);
+    }
+
+    //Verify Code
+    public function verifyCode(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'code' => 'required',
+            'email' => 'required',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => implode(",", $validator->errors()->all()), 'errors' => $validator->errors()]);
+        }
+
+        $type = "recover";
+
+        $reg = CodeRequest::where([['mobile', $request->email], ['status', 0], ['type', $type]])->latest()->first();
+
+        if ($reg == null) {
+            return response()->json(['success' => false, 'message' => 'Kindly request for OTP']);
+        }
+
+        if ($reg->code != $request->code) {
+            return response()->json(['success' => false, 'message' => 'Verification code did not match']);
+        }
+
+//        $reg->status = 1;
+//        $reg->save();
+
+        return response()->json(['success' => true, 'message' => 'Code confirmed successfully.']);
+    }
+
+    public function sendcode(Request $request)
+    {
+        $input = $request->all();
+        $validator = Validator::make($request->all(), [
+            'email' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => implode(",", $validator->errors()->all()), 'errors' => $validator->errors()]);
+        }
+
+        $em = User::where("email", $input['email'])->first();
+
+        if (!$em) {
+            return response()->json(['success' => false, 'message' => 'Email does not exist']);
+        }
+
+        $code = substr(rand(), 0, 6);
+
+        CodeRequest::create([
+            'mobile' => $input['email'],
+            'code' => $code,
+            'status' => 0,
+            'type' => "recover"
+        ]);
+
+        Mail::to($input['email'])->send(new EmailVerificationMail($code));
+
+        return response()->json(['success' => true, 'message' => 'Code sent successfully', 'data' => $code]);
+    }
+
 
     public function decryption(Request $request){
         $validator = Validator::make($request->all(), [

@@ -26,6 +26,10 @@ Route::group(['prefix' => 'app'], function () {
     Route::post('register', [AuthenticationController::class, 'register']);
     Route::post('reset-password', [AuthenticationController::class, 'resetPassword']);
 
+    Route::post('forget-password', [AuthenticationController::class, 'sendcode']);
+    Route::post('forget-password-otp', [AuthenticationController::class, 'verifyCode']);
+    Route::post('forget-password-submit', [AuthenticationController::class, 'forget_password_submit']);
+
     Route::group(['middleware' => 'auth:sanctum'], function () {
         Route::get('transactions', [BusinessController::class, 'transactions']);
         Route::get('wallets', [BusinessController::class, 'wallets']);
@@ -49,10 +53,10 @@ Route::group(['prefix' => 'app'], function () {
         Route::post('electricity-validate', [BillsPaymentController::class, 'electricityValidate']);
         Route::post('electricity-pay', [BillsPaymentController::class, 'electricityRecharge']);
 
-        Route::get('bank-list', [NibssPayController::class, 'bankList']);
-        Route::post('bank-validate', [NibssPayController::class, 'verify']);
+        Route::get('bank-list', [PayoutController::class, 'bankList']);
+        Route::post('bank-validate', [PayoutController::class, 'verify']);
         Route::post('bank-transferfee', [PayoutController::class, 'transferFee']);
-        Route::post('bank-transfer', [NibssPayController::class, 'transfer']);
+        Route::post('bank-transfer', [PayoutController::class, 'transfer']);
 
         Route::get('profile', [BusinessController::class, 'profile']);
         Route::post('update-password', [BusinessController::class, 'updatePassword']);

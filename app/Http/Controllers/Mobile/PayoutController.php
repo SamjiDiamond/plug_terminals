@@ -60,7 +60,7 @@ class PayoutController extends Controller
     }
 
     // bank account name
-    public function bankValidate(Request $request){
+    public function verify(Request $request){
         $input=$request->all();
 
         $validator = Validator::make($input, [
@@ -131,7 +131,7 @@ class PayoutController extends Controller
     }
 
     // Initiate Bank Transfer
-    public function initiateTransfer(Request $request){
+    public function transfer(Request $request){
 
         $input = $request->all();
 
