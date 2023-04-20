@@ -13,6 +13,7 @@ use App\Models\Transaction;
 use App\Models\TvBouquet;
 use App\Models\TvProviders;
 use App\Models\Wallet;
+use App\Notifications\NotifyUser;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -47,14 +48,6 @@ class BillsPaymentController extends Controller
 
         Log::info("Airtime Order Incoming Request ". json_encode($input));
 
-        $business = Business::where(["id" => Auth::user()->business_id])->first();
-
-        if(!$business){
-            return response()->json(['success' => false, 'message' => 'Business does not exist or does not belongs to you.']);
-        }
-
-        Log::info("Business Authenticated on Airtime Order Request [Business: ID - ".$business->id." & Name - ".$business->name."]");
-
         $wallet = wallet::where('user_id', Auth::id())->first();
 
         if(!$wallet){
@@ -62,7 +55,7 @@ class BillsPaymentController extends Controller
         }
 
         //Check if reference already exist in user account
-        $check_ref = BillsHistory::where(["business_id" => $business->id, 'api_req_id'=>$input['reference']])->first();
+        $check_ref = BillsHistory::where(["user_id" => Auth::id(), 'api_req_id'=>$input['reference']])->first();
         if ($check_ref) {
             return response()->json(['success' => false, 'message' => 'Reference order already existed']);
         }
@@ -113,7 +106,7 @@ class BillsPaymentController extends Controller
 
         $payload='{"request_id": "' . $trx . '", "serviceID": "' . $netcode . '","amount": "' . $amount . '","number": "' . $phone . '","phone": "' . $phone . '"}';
 
-        Log::info("Attempting Airtime Order [User ID - ".Auth::id()." & Name - ".$business->name."]".json_encode($payload));
+        Log::info("Attempting Airtime Order [User ID - ".Auth::id()."]".json_encode($payload));
 
         if(env('BILLS_DOMAIN') == "live") {
             $curl = curl_init();
@@ -152,7 +145,7 @@ class BillsPaymentController extends Controller
             //activity log
 
             //log bill history
-            $bill['business_id'] = $business->id;
+            $bill['business_id'] = Auth::user()->business_id;
             $bill['user_id'] = Auth::id();
             $bill['service_type'] = "airtime";
             $bill['provider'] = $input['provider'];
@@ -186,7 +179,12 @@ class BillsPaymentController extends Controller
                 'balance' => $wallet->balance
             ]);
 
-            Log::notice("Airtime Order Successful [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            $notifyData['sender']="System";
+            $notifyData['message']="NGN $request->amount ".$input['provider']." Airtime Purchase Was Successful To ".$phone;
+
+            Auth::user()->notify(new NotifyUser($notifyData));
+
+            Log::notice("Airtime Order Successful [Reference  ".$trx."]");
 
             return response()->json(['success' => true, 'message' => 'Airtime Purchase was successful', 'data' => $trx]);
         }else{
@@ -196,7 +194,7 @@ class BillsPaymentController extends Controller
             $wallet->balance = $current_bal;
             $wallet->save();
 
-            Log::alert("Airtime Order Failed [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            Log::alert("Airtime Order Failed [Reference  ".$trx."]");
 
             return response()->json(['success' => false, 'message' => 'Unable to Process this Transaction at the moment, Try again later']);
         }
@@ -240,13 +238,7 @@ class BillsPaymentController extends Controller
 
         $reference = $input['reference'];
 
-        $business = Business::where(["id" => Auth::user()->business_id])->first();
-
-        if(!$business){
-            return response()->json(['success' => false, 'message' => 'Business does not exist or does not belongs to you.', 'error' => $validator->errors()]);
-        }
-
-        Log::info("Business Authenticated on Internet Order Request [Business: ID - ".$business->id." & Name - ".$business->name."]");
+        Log::info("Business Authenticated on Internet Order Request [User: ID - ".Auth::id()."]");
 
         $wallet = wallet::where('user_id', Auth::id())->first();
 
@@ -255,7 +247,7 @@ class BillsPaymentController extends Controller
         }
 
         //Check if reference already exist in user account
-        $check_ref = BillsHistory::where(["business_id" => $business->id, 'api_req_id'=>$reference])->first();
+        $check_ref = BillsHistory::where(["user_id" => Auth::id(), 'api_req_id'=>$reference])->first();
         if ($check_ref) {
             return response()->json(['success' => false, 'message' => 'Reference order already existed']);
         }
@@ -290,7 +282,7 @@ class BillsPaymentController extends Controller
 
         $trx = Carbon::now()->format('YmdHi') . rand();
 
-        Log::info("Attempting Internet Order [Business: ID - ".$business->id." & Name - ".$business->name."]".json_encode($request->all()));
+        Log::info("Attempting Internet Order [User: ID - ".Auth::id()."]".json_encode($request->all()));
 
         if(env('BILLS_DOMAIN') == "live") {
             $curl = curl_init();
@@ -331,7 +323,7 @@ class BillsPaymentController extends Controller
             //activity log
 
             //log bill history
-            $bill['business_id'] = $business->id;
+            $bill['business_id'] = Auth::id();
             $bill['user_id'] = Auth::id();
             $bill['service_type'] = "internet";
             $bill['provider'] = $network->provider;
@@ -365,7 +357,7 @@ class BillsPaymentController extends Controller
                 'balance' => $wallet->balance
             ]);
 
-            Log::notice("Internet Order Successful [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            Log::notice("Internet Order Successful [User: ID - ".Auth::id()."]");
 
             return response()->json(['success' => true, 'message' => 'Data successful', 'data' => $reference ]);
         }else{
@@ -375,7 +367,7 @@ class BillsPaymentController extends Controller
             $wallet->balance = $current_bal;
             $wallet->save();
 
-            Log::alert("Internet Order Failed [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            Log::alert("Internet Order Failed [User: ID - ".Auth::id()."]");
 
             return response()->json(['success' => false, 'message' => 'Unable to Process this Transaction at the moment, Try again later']);
         }
@@ -488,13 +480,7 @@ class BillsPaymentController extends Controller
 
         Log::info("CableTv Order Incoming Request ".json_encode($request->all()));
 
-        $business = Business::where(["id" => Auth::user()->business_id])->first();
-
-        if(!$business){
-            return response()->json(['success' => false, 'message' => 'Business does not exist or does not belongs to you.']);
-        }
-
-        Log::info("Business Authenticated on CableTv Order Request [Business: ID - ".$business->id." & Name - ".$business->name."]");
+        Log::info("Business Authenticated on CableTv Order Request [Business: ID - ".Auth::id()."]");
 
         $wallet = wallet::where('user_id', Auth::id())->first();
 
@@ -503,7 +489,7 @@ class BillsPaymentController extends Controller
         }
 
         //Check if reference already exist in user account
-        $check_ref = BillsHistory::where(["business_id" => $business->id, 'api_req_id'=>$request->reference])->first();
+        $check_ref = BillsHistory::where(["user_id" => Auth::id(), 'api_req_id'=>$request->reference])->first();
         if ($check_ref) {
             return response()->json(['success' => false, 'message' => 'Reference order already existed']);
         }
@@ -538,7 +524,7 @@ class BillsPaymentController extends Controller
 
         $trx = Carbon::now()->format('YmdHi') . rand();
 
-        Log::info("Attempting CableTv Order [Business: ID - ".$business->id." & Name - ".$business->name."]".json_encode($request->all()));
+        Log::info("Attempting CableTv Order [User: ID - ".Auth::id()."]".json_encode($request->all()));
 
         $phone = $input['number'];
 
@@ -572,7 +558,7 @@ class BillsPaymentController extends Controller
 
         $res = json_decode($response, true);
 
-        Log::info("CableTv Order Response [Business: ID - ".$business->id." & Name - ".$business->name."]".json_encode($res));
+        Log::info("CableTv Order Response [User: ID - ".Auth::id()."]".json_encode($res));
 
         if ($res['code'] == '000'){
 
@@ -581,7 +567,7 @@ class BillsPaymentController extends Controller
             //activity log
 
             //log bill history
-            $bill['business_id'] = $business->id;
+            $bill['business_id'] = Auth::user()->business_id;
             $bill['user_id'] = Auth::id();
             $bill['service_type'] = "tv";
             $bill['provider'] = $input['provider'];
@@ -616,7 +602,7 @@ class BillsPaymentController extends Controller
                 'balance' => $wallet->balance
             ]);
 
-            Log::notice("CableTv Order Successful [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            Log::notice("CableTv Order Successful [User: ID - ".Auth::id()."]");
 
             return response()->json(['success' => true, 'message' => 'SUCCESSFUL', 'data' => $trx]);
         }else{
@@ -626,7 +612,7 @@ class BillsPaymentController extends Controller
             $wallet->balance = $current_bal;
             $wallet->save();
 
-            Log::alert("CableTv Order Failed [Business: ID - ".$business->id." & Name - ".$business->name."]");
+            Log::alert("CableTv Order Failed [User: ID - ".Auth::id()."]");
 
             return response()->json(['success' => false, 'message' => 'Unable to Process this Transaction at the moment, Try again later']);
         }
@@ -723,15 +709,8 @@ class BillsPaymentController extends Controller
 
         Log::info("Electricity Order Incoming Request " . json_encode($request->all()));
 
-        $business = Business::where(["id" => Auth::user()->business_id])->first();
 
-        if(!$business){
-            return response()->json(['success' => false, 'message' => 'Business does not exist or does not belongs to you.']);
-        }
-
-        $business = Business::where("id", $business->id)->first();
-
-        Log::info("Business Authenticated on Electricity Order Request [Business: ID - " . $business->id . " & Name - " . $business->name . "]");
+        Log::info("Business Authenticated on Electricity Order Request [User: ID - " . Auth::id() . "]");
 
         $wallet = wallet::where('user_id', Auth::id())->first();
 
@@ -740,7 +719,7 @@ class BillsPaymentController extends Controller
         }
 
         //Check if reference already exist in user account
-        $check_ref = BillsHistory::where(["business_id" => $business->id, 'api_req_id' => $input['reference']])->first();
+        $check_ref = BillsHistory::where(["user_id" => Auth::id(), 'api_req_id' => $input['reference']])->first();
         if ($check_ref) {
             return response()->json(['success' => false, 'message' => 'Reference order already existed']);
         }
@@ -770,7 +749,7 @@ class BillsPaymentController extends Controller
 
         $url = env('VTPASS_URL');
 
-        Log::info("Attempting Electricity Order [Business: ID - " . $business->id . " & Name - " . $business->name . "]" . json_encode($request->all()));
+        Log::info("Attempting Electricity Order [User: ID - " . Auth::id() . "]" . json_encode($request->all()));
 
         $trx = Carbon::now()->format('YmdHi') . rand();
         $phone = $input['number'];
@@ -805,7 +784,7 @@ class BillsPaymentController extends Controller
 
         $res = json_decode($response, true);
 
-        Log::info("Electricity Order Response [Business: ID - " . $business->id . " & Name - " . $business->name . "]" . json_encode($res));
+        Log::info("Electricity Order Response [User: ID - " . Auth::id() . "]" . json_encode($res));
 
         if ($res['code'] == '000'){
             //log transaction history
@@ -813,7 +792,7 @@ class BillsPaymentController extends Controller
             //activity log
 
             //log bill history
-            $bill['business_id'] = $business->id;
+            $bill['business_id'] = Auth::user()->business_id;
             $bill['user_id'] = Auth::id();
             $bill['service_type'] = "electricity";
             $bill['provider'] = $input['provider'];
@@ -872,7 +851,7 @@ class BillsPaymentController extends Controller
                 'balance' => $wallet->balance
             ]);
 
-            Log::notice("Electricity Order Successful [Business: ID - " . $business->id . " & Name - " . $business->name . "]");
+            Log::notice("Electricity Order Successful [User: ID - " . Auth::id() . "]");
 
             return response()->json(['success' => true, 'message' => 'SUCCESSFUL', 'data' => $trx, 'purchased_code' => $purchased_code, 'units' => $units]);
         }else{
@@ -882,7 +861,7 @@ class BillsPaymentController extends Controller
             $wallet->balance = $current_bal;
             $wallet->save();
 
-            Log::alert("Electricity Order Failed [Business: ID - " . $business->id . " & Name - " . $business->name . "]");
+            Log::alert("Electricity Order Failed [User: ID - " . Auth::id() . "]");
 
             return response()->json(['success' => false, 'message' => 'Unable to Process this Transaction at the moment, Try again later']);
         }

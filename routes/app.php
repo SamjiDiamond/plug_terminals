@@ -60,6 +60,8 @@ Route::group(['prefix' => 'app'], function () {
 
         Route::get('profile', [BusinessController::class, 'profile']);
         Route::post('update-password', [BusinessController::class, 'updatePassword']);
+        Route::post('update-pin', [BusinessController::class, 'updatePin']);
+        Route::get('notifications', [BusinessController::class, 'notifications']);
 
     });
 

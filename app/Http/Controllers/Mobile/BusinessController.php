@@ -54,4 +54,33 @@ class BusinessController extends Controller
 
         return response()->json(['status' => true, 'message' => 'Password Changed Successfully']);
     }
+
+    public function updatePin(Request $request)
+    {
+        $input = $request->all();
+
+        $validator = Validator::make($input, [
+            'current' => 'required',
+            'new' => 'required'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['status' => false, 'message' => 'Error in request', 'error' => $validator->errors()]);
+        }
+
+        if($input['current'] != Auth::user()->pin){
+            return response()->json(['status' => false, 'message' => 'Current pin did not match']);
+        }
+
+        $user=User::find(Auth::id());
+
+        $user->pin=$input['new'];
+        $user->save();
+
+        return response()->json(['status' => true, 'message' => 'Pin Changed Successfully']);
+    }
+
+    function notifications(){
+        return response()->json(['success' => 1, 'message' => 'Fetched successfully', 'data'=>Auth::user()->notifications]);
+    }
 }
